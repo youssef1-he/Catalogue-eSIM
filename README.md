@@ -1,63 +1,78 @@
 # Dashboard catalogue eSIM
 
-Test de recrutement MyBestSim, partie 1 : lire 18 fichiers CSV fournisseurs, en sortir les statistiques clés et les présenter dans un dashboard accessible par un simple lien.
+Projet réalisé dans le cadre du test de recrutement MyBestSim.
 
-- **Dashboard en ligne** : _à compléter avec le lien_ (la page `docs/index.html` est 100 % statique, elle s'ouvre sans rien installer).
-- **Données** : 18 fichiers, 5 056 lignes, un fichier par fournisseur (`data/`).
+L'objectif était de récupérer les données de 18 fournisseurs eSIM au format CSV, de les nettoyer, d'en tirer les principales statistiques et de les présenter dans un dashboard accessible directement depuis un navigateur.
 
-## Résultats
+**Dashboard :** _lien à ajouter_
 
-| Indicateur demandé | Valeur |
-|---|---|
-| Cartes eSIM (produits) | **5 056** |
-| Produits à plus de 100 € | **56** (1,1 %), tous des « Illimité 30 jours » |
-| Prix le plus bas / le plus haut | **5,36 €** / **154,63 €** |
-| Data moyenne par carte | **14,49 Go** (sur 4 403 cartes avec un volume, les 653 illimitées sont exclues) |
-| Prix moyen global | **29,30 €** (médiane 20,70 €) |
-| Répartition par fournisseur | Airalo 722, Ubigi 562, eSIMX 432, Saily 382, GigSky 342, Nomad 312, Instabridge 282, aloSIM 262, Holafly 242, Yesim 222, Jetpac 212, Truphone 202, JamboSIM 182, Flexiroam 172, Yatelo 162, Maya Mobile 152, Roamic 122, 4S eSIM 92 |
+Le dashboard est entièrement statique : il n'y a rien à installer pour le consulter.
 
-### Ce que le dashboard ajoute (bonus)
+## Quelques chiffres
 
-- **Le prix dépend de l'offre, pas du fournisseur.** Le prix moyen varie de 24,26 € (4S eSIM) à 32,10 € (Yesim), mais cet écart suit le mix de produits (corrélation de 0,95 avec la data moyenne). Avec un indice qui compare chaque carte à la médiane de la même offre (pays, volume, durée), tous les fournisseurs sont entre 99,1 et 100,5.
-- **Les offres multi-pays coûtent 40 % de plus** (Europe, Asie, Amérique du Nord, Monde) à volume et durée égaux. Le pays, lui, change le prix de moins de 3 %.
-- **L'illimité se paie sur la durée** : +27 % face à 50 Go sur 30 jours, −33 % sur 7 jours.
-- **Prix au Go** divisé par 5,8 entre 1 Go et 50 Go. Pas de prime 5G visible.
-- Distribution des prix, prix par volume et par durée, meilleures et moins bonnes offres au Go, tableau fournisseurs triable, encart qualité des données.
+| Indicateur | Résultat |
+|---|---:|
+| Nombre de produits | **5 056** |
+| Produits à plus de 100 € | **56** |
+| Prix minimum | **5,36 €** |
+| Prix maximum | **154,63 €** |
+| Data moyenne | **14,49 Go** |
+| Prix moyen | **29,30 €** |
+| Prix médian | **20,70 €** |
 
-## Choix assumés
+La moyenne de data est calculée sur les 4 403 produits ayant un volume indiqué. Les offres illimitées sont donc exclues de ce calcul.
 
-| Question | Choix | Pourquoi |
-|---|---|---|
-| Qu'est-ce qu'un « produit » ? | Une ligne de CSV = une carte, identifiée par son SKU | Aucun SKU n'apparaît deux fois. |
-| 1 351 lignes partagent fournisseur + pays + volume + durée avec une autre ligne (620 offres) | **Conservées** | Elles ont un SKU, un prix et parfois un réseau ou une option de recharge différents : ce sont des lignes de catalogue distinctes. Le dashboard indique l'effet d'un dédoublonnage (4 325 cartes, prix moyen 29,16 €). |
-| « Illimité » dans la moyenne de data | **Exclu**, compté à part (653 cartes) | Pas de volume en Go. Le compter à 0 donnerait 12,62 Go, ce qui n'a pas de sens. |
-| Seuil « plus de 100 € » | **Strict** (> 100) | Aucun produit n'est à exactement 100 €, le résultat est identique avec ≥. |
-| Prix manquants, nuls, autre devise | Écartés **et comptés** | Ici : 0 ligne écartée, tout est en EUR. Le contrôle reste actif pour les imports suivants. |
-| Comparaison des fournisseurs | Indice de prix à offre comparable | Le prix moyen seul trompe : un fournisseur avec plus d'illimité ou de gros volumes paraît plus cher sans l'être. |
+### Produits par fournisseur
 
-## Pièges rencontrés
+- Airalo : 722
+- Ubigi : 562
+- eSIMX : 432
+- Saily : 382
+- GigSky : 342
+- Nomad : 312
+- Instabridge : 282
+- aloSIM : 262
+- Holafly : 242
+- Yesim : 222
+- Jetpac : 212
+- Truphone : 202
+- JamboSIM : 182
+- Flexiroam : 172
+- Yatelo : 162
+- Maya Mobile : 152
+- Roamic : 122
+- 4S eSIM : 92
 
-- **Le code pays `NA` (Amérique du Nord)** est lu comme une valeur manquante par pandas. Le pipeline lit tout en texte avec `keep_default_na=False`.
-- **Un bug attrapé par recoupement** : mon histogramme Python s'arrêtait à 150 € et excluait la carte à 154,63 €. Le calcul indépendant fait dans le navigateur a révélé l'écart (5 055 cartes comptées au lieu de 5 056).
+## Ce que j'ai ajouté au dashboard
 
-## Fonctionnement
+En plus des statistiques demandées, j'ai ajouté quelques comparaisons pour essayer de mieux comprendre les données :
 
-```
-data/*.csv ──> src/pipeline.py ──> out/catalogue.json, out/fichiers.json, out/stats.json
-                                              │
-dashboard/page.html + out/*.json ──> src/build_standalone.py ──> docs/index.html
-```
+- comparaison des prix entre fournisseurs ;
+- distribution des prix ;
+- prix en fonction du volume de data ;
+- prix en fonction de la durée ;
+- prix au Go ;
+- comparaison des offres illimitées ;
+- classement des meilleures offres au Go ;
+- tableau des fournisseurs avec tri ;
+- quelques indicateurs sur la qualité des données.
 
-1. `src/pipeline.py` lit les CSV de façon tolérante (encodage utf-8 / cp1252, séparateur détecté, prix avec virgule, data en Mo ou Go, alias de colonnes), rejette et compte ce qui est invalide, puis calcule `out/stats.json` (valeurs de référence) et exporte le catalogue nettoyé.
-2. `dashboard/page.html` recalcule tous les chiffres dans le navigateur à partir du catalogue nettoyé. `out/stats.json` sert de référence : plus de 230 valeurs comparées (KPI, fournisseurs, histogramme, volumes, durées, qualité) sont identiques.
-3. `src/build_standalone.py` assemble une page unique `docs/index.html` (données et D3 intégrés), thème clair et sombre, utilisable sur mobile.
+Quelques observations ressortent notamment :
 
-## Lancer
+- le prix moyen varie selon les fournisseurs, mais cela dépend beaucoup du type d'offres présentes dans leur catalogue ;
+- les offres multi-pays sont globalement plus chères que les offres pour un seul pays ;
+- les offres illimitées sont surtout plus chères lorsque la durée augmente ;
+- le prix par Go diminue fortement lorsque le volume de data augmente ;
+- je n'ai pas trouvé de différence suffisamment claire pour conclure à une vraie différence de prix liée à la 5G.
 
-```bash
-pip install -r requirements.txt
-python src/pipeline.py data out/stats.json     # nettoie, calcule, exporte
-python src/build_standalone.py                 # génère docs/index.html
-```
+## Comment j'ai traité les données
 
-Puis ouvrir `docs/index.html`. Pour le mettre en ligne : GitHub Pages (Settings, Pages, branche `main`, dossier `/docs`), ou glisser le dossier `docs` sur Netlify Drop.
+J'ai considéré qu'une ligne du CSV correspondait à un produit, avec son SKU comme identifiant.
+
+Certaines lignes ont des caractéristiques très proches (même fournisseur, pays, volume et durée), mais je les ai gardées lorsqu'elles avaient un SKU différent. Elles peuvent notamment avoir un réseau ou une option différente.
+
+Pour les offres illimitées, je ne les ai pas comptées comme `0 Go` dans la moyenne. Elles sont comptées séparément car elles n'ont pas réellement de volume de data comparable aux autres offres.
+
+Pour le calcul des produits à plus de 100 €, j'ai utilisé le seuil strict `> 100 €`.
+
+Les prix manquants ou invalides sont également contrôlés par le pipeline. Dans les données fournies
