@@ -4,7 +4,7 @@ Projet réalisé dans le cadre du test de recrutement MyBestSim.
 
 L'objectif était de récupérer les données de 18 fournisseurs eSIM au format CSV, de les nettoyer, d'en tirer les principales statistiques et de les présenter dans un dashboard accessible directement depuis un navigateur.
 
-**Dashboard :** _lien à ajouter_
+**Dashboard :** (https://catalogue-e-sim.vercel.app/)
 
 Le dashboard est entièrement statique : il n'y a rien à installer pour le consulter.
 
