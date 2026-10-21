@@ -1,0 +1,779 @@
+<style>
+.cs { container-type: inline-size; max-width: 1180px; margin-inline: auto; display: flex; flex-direction: column; gap: 2.25rem; font-family: var(--font-anthropic-sans); color: var(--color-fg); }
+.cs *, .cs *::before, .cs *::after { box-sizing: border-box; }
+.cs h1, .cs h2, .cs h3, .cs p { margin: 0; }
+.cs-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.cs-eyebrow { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); letter-spacing: .04em; text-transform: uppercase; }
+.cs-head { display: flex; flex-direction: column; gap: var(--cds-gap-sm); }
+.cs-head h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: clamp(1.9rem, 4vw, 2.6rem); line-height: 1.1; text-wrap: balance; }
+.cs-take { max-width: 62ch; font-size: var(--cds-font-size-heading); line-height: 1.5; color: var(--color-fg); text-wrap: pretty; }
+.cs-take span, .cs-note span, .cs-ins p span { font-variant-numeric: tabular-nums; }
+
+.cs-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--cds-gap-md); }
+.cs-tile-wide { grid-column: 1 / -1; }
+@container (min-width: 40rem) { .cs-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } .cs-tile-wide { grid-column: auto; } }
+@container (min-width: 62rem) { .cs-tiles { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.cs-tile { display: flex; flex-direction: column; gap: var(--cds-gap-xs); padding: var(--cds-pad-md) var(--cds-pad-lg); background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); min-width: 0; }
+.cs-tile-l { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.cs-tile-v { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: clamp(1.7rem, 2.6vw, 2.2rem); line-height: 1.15; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.cs-tile-v-sm { font-size: clamp(1.35rem, 2vw, 1.75rem); }
+.cs-tile-v .u { font-size: .6em; color: var(--color-fg-muted); margin-left: .15em; }
+.cs-tile-s { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.45; }
+
+.cs-sec { display: flex; flex-direction: column; gap: var(--cds-gap-md); }
+.cs-sec > h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); }
+.cs-lead { max-width: 70ch; color: var(--color-fg-muted); font-size: var(--cds-font-size-body); line-height: 1.5; text-wrap: pretty; }
+.cs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: var(--cds-gap-md); }
+.cs-card { display: flex; flex-direction: column; gap: var(--cds-gap-sm); padding: var(--cds-pad-lg); background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); min-width: 0; }
+.cs-card h3 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); }
+.cs-note { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.45; }
+
+.cs-chart { position: relative; width: 100%; }
+.cs-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.cs-prov { min-height: 472px; }
+.cs-hist { min-height: 230px; }
+.cs-bydata { min-height: 200px; }
+.cs-bydays { min-height: 88px; }
+.cs-unl { min-height: 220px; }
+.cs-chart text { font-family: var(--font-anthropic-sans); font-size: 12px; fill: var(--color-fg); }
+.cs-chart text.cs-mut { fill: var(--color-fg-muted); font-size: 11px; }
+.cs-chart text.cs-val { font-variant-numeric: tabular-nums; }
+.cs-chart text.cs-tick { fill: var(--color-fg-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.cs-chart .cs-hit { fill: transparent; }
+.cs-chart .cs-bar { transition: opacity var(--cds-dur-slow); }
+.cs-chart.cs-hov .cs-bar { opacity: .45; }
+.cs-chart.cs-hov .cs-bar.on { opacity: 1; }
+.cs-tip { position: absolute; z-index: 5; pointer-events: none; max-width: 16rem; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); line-height: 1.45; font-variant-numeric: tabular-nums; }
+.cs-tip b { display: block; font-weight: var(--cds-font-weight-medium); color: var(--cds-text-secondary); }
+.cs-fail { display: flex; align-items: center; justify-content: center; gap: .5rem; min-height: 6rem; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.cs-fail::before { content: ""; width: .375rem; height: .375rem; border-radius: 50%; background: var(--color-bad); }
+[data-dash-source-state=empty] { color: transparent; }
+[data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+
+.cs-scroll { overflow: auto; max-width: 100%; }
+.cs-table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-body); font-variant-numeric: tabular-nums; }
+.cs-table th, .cs-table td { padding: .5rem .75rem; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--color-border-line); }
+.cs-table th.t, .cs-table td.t { text-align: left; }
+.cs-table th:first-child, .cs-table td:first-child { text-align: left; padding-left: 0; }
+.cs-table th:last-child, .cs-table td:last-child { padding-right: 0; }
+.cs-table thead th { position: sticky; top: 0; background: var(--color-panel); font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); z-index: 1; }
+.cs-table tbody tr:hover td { background: color-mix(in srgb, var(--color-fg) 4%, transparent); }
+.cs-table tbody tr:last-child td { border-bottom: 0; }
+.cs-sort { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: .3rem; }
+.cs-sort:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; border-radius: 2px; }
+.cs-sort::after { content: ""; width: .5rem; height: .5rem; opacity: 0; background: currentColor; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+th[aria-sort=ascending] .cs-sort::after { opacity: 1; }
+th[aria-sort=descending] .cs-sort::after { opacity: 1; transform: rotate(180deg); }
+.cs-cell { display: inline-flex; align-items: center; justify-content: flex-end; gap: .5rem; width: 100%; min-width: 7rem; }
+.cs-cell i { display: block; height: .5rem; border-radius: 3px; background: var(--cds-chart-muted); }
+.cs-qbox { max-height: 22rem; }
+.cs-sum { display: flex; flex-wrap: wrap; gap: .25rem 1.5rem; font-size: var(--cds-font-size-body); }
+.cs-sum div { display: flex; gap: .4rem; align-items: baseline; }
+.cs-sum b { font-weight: var(--cds-font-weight-medium); font-variant-numeric: tabular-nums; }
+.cs-sum span.k { color: var(--color-fg-muted); }
+
+.cs-grid4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: var(--cds-gap-md); }
+.cs-ins { display: flex; flex-direction: column; gap: var(--cds-gap-xs); padding-top: var(--cds-pad-md); border-top: 1px solid var(--color-border-line); min-width: 0; }
+.cs-ins-n { font-family: var(--font-anthropic-serif); font-size: clamp(1.8rem, 3vw, 2.4rem); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.cs-ins h3 { font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); }
+.cs-ins p { font-size: var(--cds-font-size-body); line-height: 1.5; color: var(--color-fg-muted); text-wrap: pretty; }
+.cs-def { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--cds-gap-md) var(--cds-gap-xl); margin: 0; }
+.cs-def div { display: flex; flex-direction: column; gap: .2rem; }
+.cs-def dt { font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-body); }
+.cs-def dd { margin: 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-body); line-height: 1.5; max-width: 62ch; }
+.cs-def code { font-size: .92em; }
+</style>
+
+<div class="cs" id="top">
+
+  <header class="cs-head">
+    <p class="cs-eyebrow">Test de recrutement MyBestSim · 18 fichiers CSV fournisseurs</p>
+    <h1>Catalogue eSIM</h1>
+    <p class="cs-take">
+      <span data-source="kpis" data-row="0" data-field="total" data-fmt="int">—</span> cartes eSIM chez
+      <span data-source="kpis" data-row="0" data-field="providers" data-fmt="int">—</span> fournisseurs, de
+      <span data-source="kpis" data-row="0" data-field="pmin" data-fmt="d2">—</span> € à
+      <span data-source="kpis" data-row="0" data-field="pmax" data-fmt="d2">—</span> €.
+      À offre comparable (même pays, même volume, même durée), aucun fournisseur ne s’écarte de plus de
+      <span data-source="kpis" data-row="0" data-field="index_maxdev" data-fmt="d1">—</span> % de la médiane du marché.
+      Le prix dépend surtout du volume de data, de la durée et de la zone couverte.
+    </p>
+  </header>
+
+  <section class="cs-sec" id="chiffres-cles" aria-labelledby="h-kpi">
+    <h2 class="cs-sr" id="h-kpi">Chiffres clés</h2>
+    <div class="cs-tiles">
+      <div class="cs-tile">
+        <div class="cs-tile-l">Cartes eSIM</div>
+        <div class="cs-tile-v"><span class="dash-skeleton" data-source="kpis" data-row="0" data-field="total" data-fmt="int">—</span></div>
+        <div class="cs-tile-s">chez <span data-source="kpis" data-row="0" data-field="providers" data-fmt="int">—</span> fournisseurs, une ligne de CSV = une carte (SKU unique)</div>
+      </div>
+      <div class="cs-tile">
+        <div class="cs-tile-l">Produits à plus de 100 €</div>
+        <div class="cs-tile-v"><span class="dash-skeleton" data-source="kpis" data-row="0" data-field="over100" data-fmt="int">—</span></div>
+        <div class="cs-tile-s"><span data-source="kpis" data-row="0" data-field="over100_share" data-fmt="frac1">—</span> % du catalogue<span data-cond="over100_all_unl30" hidden>, toutes en illimité sur 30 jours</span></div>
+      </div>
+      <div class="cs-tile cs-tile-wide">
+        <div class="cs-tile-l">Fourchette de prix</div>
+        <div class="cs-tile-v cs-tile-v-sm"><span class="dash-skeleton" data-source="kpis" data-row="0" data-field="pmin" data-fmt="d2">—</span><span class="u">€</span> – <span class="dash-skeleton" data-source="kpis" data-row="0" data-field="pmax" data-fmt="d2">—</span><span class="u">€</span></div>
+        <div class="cs-tile-s">Plus bas : <span data-source="kpis" data-row="0" data-field="pmin_n" data-fmt="int">—</span> cartes à ce prix. Plus haut : <span data-source="kpis" data-row="0" data-field="pmax_provider" data-fmt="text">—</span>, <span data-source="kpis" data-row="0" data-field="pmax_product" data-fmt="text">—</span></div>
+      </div>
+      <div class="cs-tile">
+        <div class="cs-tile-l">Data moyenne par carte</div>
+        <div class="cs-tile-v"><span class="dash-skeleton" data-source="kpis" data-row="0" data-field="avg_gb" data-fmt="d2">—</span><span class="u">Go</span></div>
+        <div class="cs-tile-s">sur <span data-source="kpis" data-row="0" data-field="n_limited" data-fmt="int">—</span> cartes avec un volume en Go. Les <span data-source="kpis" data-row="0" data-field="n_unlimited" data-fmt="int">—</span> cartes illimitées sont exclues.</div>
+      </div>
+      <div class="cs-tile">
+        <div class="cs-tile-l">Prix moyen</div>
+        <div class="cs-tile-v"><span class="dash-skeleton" data-source="kpis" data-row="0" data-field="avg_price" data-fmt="d2">—</span><span class="u">€</span></div>
+        <div class="cs-tile-s">médiane : <span data-source="kpis" data-row="0" data-field="median_price" data-fmt="d2">—</span> €</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cs-sec" id="fournisseurs-repartition" aria-labelledby="h-prov">
+    <h2 id="h-prov">Répartition par fournisseur</h2>
+    <div class="cs-card">
+      <h3>Cartes par fournisseur</h3>
+      <p class="cs-note"><span data-source="kpis" data-row="0" data-field="top1_name" data-fmt="text">—</span> pèse <span data-source="kpis" data-row="0" data-field="top1_share" data-fmt="frac1">—</span> % du catalogue, les trois premiers <span data-source="kpis" data-row="0" data-field="top3_share" data-fmt="frac1">—</span> %. Barres : nombre de cartes dans le fichier du fournisseur.</p>
+      <div class="cs-chart cs-prov dash-skeleton" id="chart-fournisseurs" data-source="providers"></div>
+    </div>
+  </section>
+
+  <section class="cs-sec" id="prix" aria-labelledby="h-prix">
+    <h2 id="h-prix">Comment se forment les prix</h2>
+    <div class="cs-grid">
+      <div class="cs-card">
+        <h3>Répartition des prix</h3>
+        <p class="cs-note">Nombre de cartes par tranche de 10 €. La moitié du catalogue coûte moins de <span data-source="kpis" data-row="0" data-field="median_price" data-fmt="d2">—</span> €.</p>
+        <div class="cs-chart cs-hist dash-skeleton" id="chart-prix" data-source="price_hist kpis"></div>
+      </div>
+      <div class="cs-card">
+        <h3>Prix moyen selon le volume</h3>
+        <p class="cs-note">Le prix au Go est divisé par <span data-source="kpis" data-row="0" data-field="gb_ratio" data-fmt="d1">—</span> entre la plus petite et la plus grande carte. L’illimité n’a pas de prix au Go.</p>
+        <div class="cs-chart cs-bydata dash-skeleton" id="chart-volume" data-source="by_data"></div>
+      </div>
+      <div class="cs-card">
+        <h3>Prix moyen selon la durée</h3>
+        <p class="cs-note">Une carte de <span data-source="kpis" data-row="0" data-field="days_max" data-fmt="int">—</span> jours coûte en moyenne <span data-source="kpis" data-row="0" data-field="days_premium" data-fmt="frac0">—</span> % de plus qu’une carte de <span data-source="kpis" data-row="0" data-field="days_min" data-fmt="int">—</span> jours.</p>
+        <div class="cs-chart cs-bydays dash-skeleton" id="chart-duree" data-source="by_days"></div>
+      </div>
+      <div class="cs-card">
+        <h3>Illimité ou 50 Go ?</h3>
+        <p class="cs-note">Prix moyen d’une carte 50 Go et d’une carte illimitée pour une même durée. À droite, l’écart de l’illimité par rapport à 50 Go.</p>
+        <div class="cs-chart cs-unl dash-skeleton" id="chart-illimite" data-source="unl_vs_50"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cs-sec" id="fournisseurs-prix" aria-labelledby="h-compare">
+    <h2 id="h-compare">Fournisseurs : le prix moyen ne dit pas tout</h2>
+    <p class="cs-lead">
+      Le prix moyen va de <span data-source="kpis" data-row="0" data-field="prov_avg_min" data-fmt="d2">—</span> € (<span data-source="kpis" data-row="0" data-field="prov_avg_min_name" data-fmt="text">—</span>)
+      à <span data-source="kpis" data-row="0" data-field="prov_avg_max" data-fmt="d2">—</span> € (<span data-source="kpis" data-row="0" data-field="prov_avg_max_name" data-fmt="text">—</span>).
+      Cet écart vient surtout du mix de produits : la corrélation avec la data moyenne est de
+      <span data-source="kpis" data-row="0" data-field="corr_price_data" data-fmt="d2">—</span>.
+      L’indice compare chaque carte à la médiane de la même offre (pays, volume, durée), 100 étant le marché.
+      Tous les fournisseurs se situent entre <span data-source="kpis" data-row="0" data-field="index_min" data-fmt="d1">—</span> et <span data-source="kpis" data-row="0" data-field="index_max" data-fmt="d1">—</span>.
+    </p>
+    <div class="cs-card">
+      <div class="cs-scroll">
+        <table class="cs-table" id="table-fournisseurs" data-source="providers" data-row-key="provider">
+          <thead>
+            <tr>
+              <th scope="col" data-field="provider"><button type="button" class="cs-sort" data-sort="provider">Fournisseur</button></th>
+              <th scope="col" data-field="n"><button type="button" class="cs-sort" data-sort="n">Cartes</button></th>
+              <th scope="col" data-field="avg_price"><button type="button" class="cs-sort" data-sort="avg_price">Prix moyen (€)</button></th>
+              <th scope="col" data-field="avg_gb"><button type="button" class="cs-sort" data-sort="avg_gb">Data moy. (Go)</button></th>
+              <th scope="col" data-field="eur_per_gb"><button type="button" class="cs-sort" data-sort="eur_per_gb">€ par Go</button></th>
+              <th scope="col" data-field="unl_share"><button type="button" class="cs-sort" data-sort="unl_share">Illimité</button></th>
+              <th scope="col" data-field="price_index"><button type="button" class="cs-sort" data-sort="price_index">Indice prix</button></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="cs-note">Cliquer sur un en-tête trie le tableau. € par Go : prix total divisé par les Go vendus, cartes illimitées exclues. Illimité : part des cartes du fournisseur.</p>
+    </div>
+  </section>
+
+  <section class="cs-sec" id="constats" aria-labelledby="h-constats">
+    <h2 id="h-constats">Ce qui fait varier le prix</h2>
+    <div class="cs-grid4">
+      <article class="cs-ins">
+        <div class="cs-ins-n">+<span data-source="kpis" data-row="0" data-field="premium_regional" data-fmt="int_r">—</span> %</div>
+        <h3>Les offres multi-pays coûtent plus cher</h3>
+        <p>À volume et durée égaux, une carte Europe, Asie, Amérique du Nord ou Monde coûte en moyenne ce pourcentage de plus qu’une carte d’une seule destination. En brut : <span data-source="kpis" data-row="0" data-field="avg_price_regional" data-fmt="d2">—</span> € contre <span data-source="kpis" data-row="0" data-field="avg_price_single" data-fmt="d2">—</span> €, sur <span data-source="kpis" data-row="0" data-field="regional_n" data-fmt="int">—</span> cartes multi-pays.</p>
+      </article>
+      <article class="cs-ins">
+        <div class="cs-ins-n"><span data-source="market" data-row="0" data-field="country_spread" data-fmt="d1">—</span> %</div>
+        <h3>Le pays change peu le prix</h3>
+        <p>À volume et durée égaux, la destination la plus chère dépasse la moins chère de ce pourcentage, hors offres multi-pays (<span data-source="kpis" data-row="0" data-field="countries" data-fmt="int">—</span> pays).</p>
+      </article>
+      <article class="cs-ins">
+        <div class="cs-ins-n"><span data-source="unl_vs_50" data-where="days=30" data-field="diff" data-fmt="signed0">—</span> %</div>
+        <h3>L’illimité se paie sur la durée</h3>
+        <p>Sur 30 jours, l’illimité coûte plus cher que 50 Go. Sur 7 jours, l’écart est de <span data-source="unl_vs_50" data-where="days=7" data-field="diff" data-fmt="signed0">—</span> %.<span data-cond="over100_all_unl30" hidden> Toutes les cartes à plus de 100 € sont des illimités sur 30 jours.</span></p>
+      </article>
+      <article class="cs-ins">
+        <div class="cs-ins-n"><span data-source="market" data-row="0" data-field="share_5g" data-fmt="frac0">—</span> %</div>
+        <h3>La 5G ne se paie pas plus</h3>
+        <p>Part de cartes 5G. À offre comparable, l’indice de prix est de <span data-source="market" data-row="0" data-field="index_5g" data-fmt="d1">—</span> en 5G contre <span data-source="market" data-row="0" data-field="index_4g" data-fmt="d1">—</span> en 4G. <span data-source="market" data-row="0" data-field="topup_share" data-fmt="frac0">—</span> % des cartes sont rechargeables.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="cs-sec" id="meilleurs-prix" aria-labelledby="h-best">
+    <h2 id="h-best">Prix au Go : meilleures et moins bonnes offres</h2>
+    <div class="cs-grid">
+      <div class="cs-card">
+        <h3>Les 5 cartes les moins chères au Go</h3>
+        <div class="cs-scroll">
+          <table class="cs-table" id="table-best" data-source="best_value" data-row-key="sku">
+            <thead><tr>
+              <th scope="col" class="t" data-field="provider">Fournisseur</th>
+              <th scope="col" class="t" data-field="product">Carte</th>
+              <th scope="col" data-field="price">Prix (€)</th>
+              <th scope="col" data-field="eur_per_gb">€ par Go</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="cs-card">
+        <h3>Les 5 cartes les plus chères au Go</h3>
+        <div class="cs-scroll">
+          <table class="cs-table" id="table-worst" data-source="worst_value" data-row-key="sku">
+            <thead><tr>
+              <th scope="col" class="t" data-field="provider">Fournisseur</th>
+              <th scope="col" class="t" data-field="product">Carte</th>
+              <th scope="col" data-field="price">Prix (€)</th>
+              <th scope="col" data-field="eur_per_gb">€ par Go</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cs-sec" id="qualite" aria-labelledby="h-quality">
+    <h2 id="h-quality">Qualité des données</h2>
+    <div class="cs-card">
+      <div class="cs-sum">
+        <div><b data-source="quality" data-row="0" data-field="files" data-fmt="int">—</b><span class="k">fichiers</span></div>
+        <div><b data-source="quality" data-row="0" data-field="rows_read" data-fmt="int">—</b><span class="k">lignes lues</span></div>
+        <div><b data-source="quality" data-row="0" data-field="rows_kept" data-fmt="int">—</b><span class="k">retenues</span></div>
+        <div><b data-source="quality" data-row="0" data-field="rows_rejected" data-fmt="int">—</b><span class="k">rejetées (prix invalide, devise non EUR, SKU en double)</span></div>
+      </div>
+      <p class="cs-lead">
+        <span data-source="dups" data-row="0" data-field="same_rows" data-fmt="int">—</span> lignes
+        (<span data-source="dups" data-row="0" data-field="same_groups" data-fmt="int">—</span> offres) partagent fournisseur, pays, volume et durée avec une autre ligne,
+        mais chacune a son SKU et son prix. Elles sont conservées comme des cartes distinctes.
+        En gardant seulement la moins chère de chaque offre, le catalogue passerait à
+        <span data-source="dups" data-row="0" data-field="dedup_rows" data-fmt="int">—</span> cartes et le prix moyen à
+        <span data-source="dups" data-row="0" data-field="dedup_avg_price" data-fmt="d2">—</span> €.
+      </p>
+      <div class="cs-scroll cs-qbox">
+        <table class="cs-table" id="table-fichiers" data-source="fichiers" data-row-key="file">
+          <thead><tr>
+            <th scope="col" class="t" data-field="file">Fichier</th>
+            <th scope="col" class="t" data-field="provider">Fournisseur</th>
+            <th scope="col" data-field="rows_read">Lignes lues</th>
+            <th scope="col" data-field="rows_kept">Retenues</th>
+            <th scope="col" data-field="rows_rejected">Rejetées</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="cs-sec" id="methode" aria-labelledby="h-method">
+    <h2 id="h-method">Méthode et choix</h2>
+    <dl class="cs-def">
+      <div><dt>Une carte, un produit</dt><dd>Chaque ligne de CSV est un produit, identifié par son SKU. Aucun SKU n’apparaît deux fois dans les 18 fichiers.</dd></div>
+      <div><dt>Plus de 100 €</dt><dd>Comparaison stricte (supérieur à 100 €). Aucun produit n’est affiché à exactement 100 €.</dd></div>
+      <div><dt>Data moyenne</dt><dd>Moyenne des Go sur les cartes qui ont un volume. Les cartes illimitées n’ont pas de Go : les compter à zéro fausserait la moyenne, les compter à part la garde lisible.</dd></div>
+      <div><dt>Prix</dt><dd>Tous les prix sont en euros, sans valeur manquante ni prix nul. Le pipeline écarte et compte toute ligne qui ne respecterait pas ces règles.</dd></div>
+      <div><dt>Indice de prix</dt><dd>Prix de la carte divisé par la médiane des cartes de même pays, même volume et même durée (au moins trois fournisseurs), moyenné par fournisseur. 100 est le marché.</dd></div>
+      <div><dt>Prime multi-pays</dt><dd>Prix de la carte divisé par la médiane des cartes de même volume et même durée, moyenné pour les offres Europe, Asie, Amérique du Nord et Monde, comparé à celui des offres mono-pays.</dd></div>
+      <div><dt>Code pays NA</dt><dd>Amérique du Nord s’écrit NA. De nombreux outils (pandas par défaut) lisent NA comme une valeur manquante : le pipeline désactive ce comportement.</dd></div>
+      <div><dt>Calculs</dt><dd>Les chiffres de cette page sont recalculés dans le navigateur à partir du catalogue nettoyé par le pipeline Python. Chaque valeur renvoie à sa source.</dd></div>
+    </dl>
+  </section>
+
+</div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const NF = (min, max, extra = {}) => new Intl.NumberFormat('fr-FR', { minimumFractionDigits: min, maximumFractionDigits: max, ...extra });
+  const nf0 = NF(0, 0), nf1 = NF(1, 1), nf2 = NF(2, 2), nfS = NF(0, 0, { signDisplay: 'exceptZero' });
+  const eur = (v) => nf2.format(v) + ' €';
+  const F = {
+    int: (v) => nf0.format(v), int_r: (v) => nf0.format(Math.round(v)),
+    d1: (v) => nf1.format(v), d2: (v) => nf2.format(v),
+    frac0: (v) => nf0.format(v * 100), frac1: (v) => nf1.format(v * 100),
+    signed0: (v) => nfS.format(v), text: (v) => String(v),
+  };
+
+  // ------------------------------------------------------------------ calculs
+  dash.calc('providers', {
+    inputs: ['catalogue'],
+    title: 'Indicateurs par fournisseur',
+    description: 'Cartes, prix, data et indice de prix à offre comparable, par fournisseur.',
+    fn: (catalogue) => {
+      const med = (a) => { const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+      const key = (r) => r.country_code + '|' + (r.unlimited ? 'U' : r.data_gb) + '|' + r.days;
+      const segPrices = new Map(), segProv = new Map();
+      for (const r of catalogue) {
+        const k = key(r);
+        if (!segPrices.has(k)) { segPrices.set(k, []); segProv.set(k, new Set()); }
+        segPrices.get(k).push(r.price); segProv.get(k).add(r.provider);
+      }
+      const segMed = new Map();
+      for (const [k, v] of segPrices) if (segProv.get(k).size >= 3) segMed.set(k, med(v));
+      const by = new Map();
+      for (const r of catalogue) {
+        if (!by.has(r.provider)) by.set(r.provider, { provider: r.provider, n: 0, sum: 0, prices: [], gbN: 0, gbSum: 0, gbPrice: 0, unl: 0, over: 0, rSum: 0, rN: 0 });
+        const a = by.get(r.provider);
+        a.n++; a.sum += r.price; a.prices.push(r.price);
+        if (r.unlimited) a.unl++; else { a.gbN++; a.gbSum += r.data_gb; a.gbPrice += r.price; }
+        if (r.price > 100) a.over++;
+        const m = segMed.get(key(r)); if (m) { a.rSum += r.price / m; a.rN++; }
+      }
+      const total = catalogue.length;
+      return [...by.values()].map((a) => ({
+        provider: a.provider, n: a.n, share: a.n / total, avg_price: a.sum / a.n, median_price: med(a.prices),
+        avg_gb: a.gbSum / a.gbN, eur_per_gb: a.gbPrice / a.gbSum, unl_share: a.unl / a.n, over100: a.over,
+        price_index: a.rN ? (a.rSum / a.rN) * 100 : null,
+      })).sort((x, y) => y.n - x.n);
+    },
+  });
+
+  dash.calc('kpis', {
+    inputs: ['catalogue', 'providers'],
+    title: 'Chiffres clés du catalogue',
+    description: 'Totaux, moyennes et comparaisons sur l’ensemble des cartes.',
+    fn: (catalogue, providers) => {
+      const med = (a) => { const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+      const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length;
+      const n = catalogue.length;
+      let lo = catalogue[0], hi = catalogue[0], sum = 0;
+      for (const r of catalogue) { sum += r.price; if (r.price < lo.price) lo = r; if (r.price > hi.price) hi = r; }
+      const nLo = catalogue.filter((r) => r.price === lo.price).length;
+      const lim = catalogue.filter((r) => !r.unlimited);
+      const over = catalogue.filter((r) => r.price > 100);
+      const REG = ['EU', 'AS', 'NA', 'WW'];
+      const isReg = (r) => REG.includes(r.country_code);
+      const reg = catalogue.filter(isReg), one = catalogue.filter((r) => !isReg(r));
+      const tk = (r) => (r.unlimited ? 'U' : r.data_gb) + '|' + r.days;
+      const g = new Map();
+      for (const r of catalogue) { if (!g.has(tk(r))) g.set(tk(r), []); g.get(tk(r)).push(r.price); }
+      const gm = new Map([...g].map(([k, v]) => [k, med(v)]));
+      const ratio = (r) => r.price / gm.get(tk(r));
+      const avgGb = (t) => mean(lim.filter((r) => r.data_gb === t).map((r) => r.price)) / t;
+      const tiers = [...new Set(lim.map((r) => r.data_gb))].sort((a, b) => a - b);
+      const days = [...new Set(catalogue.map((r) => r.days))].sort((a, b) => a - b);
+      const avgDays = (d) => mean(catalogue.filter((r) => r.days === d).map((r) => r.price));
+      const pa = providers.map((p) => p.avg_price), pg = providers.map((p) => p.avg_gb);
+      const ma = mean(pa), mg = mean(pg);
+      const corr = pa.reduce((s, x, i) => s + (x - ma) * (pg[i] - mg), 0) /
+        Math.sqrt(pa.reduce((s, x) => s + (x - ma) ** 2, 0) * pg.reduce((s, x) => s + (x - mg) ** 2, 0));
+      const byAvg = providers.slice().sort((a, b) => a.avg_price - b.avg_price);
+      const idx = providers.map((p) => p.price_index).filter((v) => v !== null);
+      return [{
+        total: n, providers: providers.length,
+        over100: over.length, over100_share: over.length / n,
+        over100_all_unl30: over.length > 0 && over.every((r) => r.unlimited && r.days === 30),
+        pmin: lo.price, pmin_n: nLo, pmax: hi.price, pmax_provider: hi.provider, pmax_product: hi.product,
+        avg_gb: mean(lim.map((r) => r.data_gb)), n_limited: lim.length, n_unlimited: n - lim.length,
+        avg_price: sum / n, median_price: med(catalogue.map((r) => r.price)),
+        top1_name: providers[0].provider, top1_share: providers[0].share,
+        top3_share: providers.slice(0, 3).reduce((s, p) => s + p.share, 0),
+        gb_ratio: avgGb(tiers[0]) / avgGb(tiers[tiers.length - 1]),
+        days_min: days[0], days_max: days[days.length - 1], days_premium: avgDays(days[days.length - 1]) / avgDays(days[0]) - 1,
+        prov_avg_min: byAvg[0].avg_price, prov_avg_min_name: byAvg[0].provider,
+        prov_avg_max: byAvg[byAvg.length - 1].avg_price, prov_avg_max_name: byAvg[byAvg.length - 1].provider,
+        corr_price_data: corr,
+        index_min: Math.min(...idx), index_max: Math.max(...idx),
+        index_maxdev: Math.max(...idx.map((v) => Math.abs(v - 100))),
+        regional_n: reg.length, avg_price_regional: mean(reg.map((r) => r.price)), avg_price_single: mean(one.map((r) => r.price)),
+        premium_regional: (mean(reg.map(ratio)) / mean(one.map(ratio)) - 1) * 100,
+        countries: new Set(one.map((r) => r.country_code)).size,
+      }];
+    },
+  });
+
+  dash.calc('market', {
+    inputs: ['catalogue'],
+    title: 'Réseau, recharge et effet pays',
+    description: 'Part de 5G, indice de prix 4G/5G, recharge et écart entre destinations.',
+    fn: (catalogue) => {
+      const med = (a) => { const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+      const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length;
+      const sk = (r) => r.country_code + '|' + (r.unlimited ? 'U' : r.data_gb) + '|' + r.days;
+      const segP = new Map(), segV = new Map();
+      for (const r of catalogue) {
+        const k = sk(r);
+        if (!segP.has(k)) { segP.set(k, []); segV.set(k, new Set()); }
+        segP.get(k).push(r.price); segV.get(k).add(r.provider);
+      }
+      const segM = new Map();
+      for (const [k, v] of segP) if (segV.get(k).size >= 3) segM.set(k, med(v));
+      const idx = (net) => { const a = []; for (const r of catalogue) { const m = segM.get(sk(r)); if (m && r.network === net) a.push(r.price / m); } return mean(a) * 100; };
+      const tk = (r) => (r.unlimited ? 'U' : r.data_gb) + '|' + r.days;
+      const g = new Map();
+      for (const r of catalogue) { if (!g.has(tk(r))) g.set(tk(r), []); g.get(tk(r)).push(r.price); }
+      const gm = new Map([...g].map(([k, v]) => [k, med(v)]));
+      const REG = ['EU', 'AS', 'NA', 'WW'];
+      const byC = new Map();
+      for (const r of catalogue) {
+        if (REG.includes(r.country_code)) continue;
+        if (!byC.has(r.country_code)) byC.set(r.country_code, []);
+        byC.get(r.country_code).push(r.price / gm.get(tk(r)));
+      }
+      const cm = [...byC.values()].map(mean);
+      return [{
+        share_5g: catalogue.filter((r) => r.network === '5G').length / catalogue.length,
+        index_4g: idx('4G'), index_5g: idx('5G'),
+        topup_share: catalogue.filter((r) => r.top_up).length / catalogue.length,
+        country_spread: (Math.max(...cm) / Math.min(...cm) - 1) * 100,
+      }];
+    },
+  });
+
+  dash.calc('price_hist', {
+    inputs: ['catalogue'],
+    title: 'Répartition des prix',
+    description: 'Nombre de cartes par tranche de 10 €.',
+    fn: (catalogue) => {
+      const w = 10, maxP = Math.max(...catalogue.map((r) => r.price));
+      const bins = [];
+      for (let f = 0; f <= Math.floor(maxP / w) * w; f += w) bins.push({ from: f, to: f + w, n: 0 });
+      for (const r of catalogue) bins[Math.floor(r.price / w)].n++;
+      return bins.map((b) => ({ ...b, share: b.n / catalogue.length }));
+    },
+  });
+
+  dash.calc('by_data', {
+    inputs: ['catalogue'],
+    title: 'Prix par volume de data',
+    description: 'Prix moyen et prix moyen au Go pour chaque volume, illimité à part.',
+    fn: (catalogue) => {
+      const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length;
+      const tiers = [...new Set(catalogue.filter((r) => !r.unlimited).map((r) => r.data_gb))].sort((a, b) => a - b);
+      const out = tiers.map((t) => {
+        const p = catalogue.filter((r) => !r.unlimited && r.data_gb === t).map((r) => r.price);
+        return { label: t + ' Go', gb: t, n: p.length, avg_price: mean(p), eur_per_gb: mean(p) / t };
+      });
+      const u = catalogue.filter((r) => r.unlimited).map((r) => r.price);
+      if (u.length) out.push({ label: 'Illimité', gb: null, n: u.length, avg_price: mean(u), eur_per_gb: null });
+      return out;
+    },
+  });
+
+  dash.calc('by_days', {
+    inputs: ['catalogue'],
+    title: 'Prix par durée',
+    description: 'Prix moyen des cartes pour chaque durée de validité.',
+    fn: (catalogue) => {
+      const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length;
+      return [...new Set(catalogue.map((r) => r.days))].sort((a, b) => a - b).map((d) => {
+        const p = catalogue.filter((r) => r.days === d).map((r) => r.price);
+        return { label: d + ' jours', days: d, n: p.length, avg_price: mean(p) };
+      });
+    },
+  });
+
+  dash.calc('unl_vs_50', {
+    inputs: ['catalogue'],
+    title: 'Illimité contre 50 Go',
+    description: 'Prix moyen d’une carte 50 Go et d’une carte illimitée, par durée, et écart de l’illimité en %.',
+    fn: (catalogue) => {
+      const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length;
+      return [...new Set(catalogue.map((r) => r.days))].sort((a, b) => a - b).map((d) => {
+        const u = mean(catalogue.filter((r) => r.days === d && r.unlimited).map((r) => r.price));
+        const g = mean(catalogue.filter((r) => r.days === d && !r.unlimited && r.data_gb === 50).map((r) => r.price));
+        return { days: d, unlimited: u, gb50: g, diff: (u / g - 1) * 100 };
+      });
+    },
+  });
+
+  dash.calc('best_value', {
+    inputs: ['catalogue'],
+    title: 'Meilleurs prix au Go',
+    description: 'Les 5 cartes avec un volume en Go au prix par Go le plus bas.',
+    fn: (catalogue) => catalogue.filter((r) => !r.unlimited)
+      .map((r) => ({ sku: r.sku, provider: r.provider, product: r.product, price: r.price, eur_per_gb: r.price / r.data_gb }))
+      .sort((a, b) => a.eur_per_gb - b.eur_per_gb).slice(0, 5),
+  });
+
+  dash.calc('worst_value', {
+    inputs: ['catalogue'],
+    title: 'Prix au Go les plus élevés',
+    description: 'Les 5 cartes avec un volume en Go au prix par Go le plus haut.',
+    fn: (catalogue) => catalogue.filter((r) => !r.unlimited)
+      .map((r) => ({ sku: r.sku, provider: r.provider, product: r.product, price: r.price, eur_per_gb: r.price / r.data_gb }))
+      .sort((a, b) => b.eur_per_gb - a.eur_per_gb).slice(0, 5),
+  });
+
+  dash.calc('dups', {
+    inputs: ['catalogue'],
+    title: 'Offres en quasi-doublon',
+    description: 'Lignes partageant fournisseur, pays, volume et durée, et effet d’un dédoublonnage au prix le plus bas.',
+    fn: (catalogue) => {
+      const g = new Map();
+      for (const r of catalogue) {
+        const k = [r.provider, r.country_code, r.unlimited ? 'U' : r.data_gb, r.days].join('|');
+        if (!g.has(k)) g.set(k, []);
+        g.get(k).push(r.price);
+      }
+      const multi = [...g.values()].filter((v) => v.length > 1);
+      const cheapest = [...g.values()].map((v) => Math.min(...v));
+      return [{
+        same_rows: multi.reduce((s, v) => s + v.length, 0), same_groups: multi.length,
+        dedup_rows: g.size, dedup_avg_price: cheapest.reduce((s, x) => s + x, 0) / cheapest.length,
+      }];
+    },
+  });
+
+  dash.calc('quality', {
+    inputs: ['fichiers'],
+    title: 'Bilan de lecture des fichiers',
+    description: 'Total des lignes lues, retenues et rejetées sur les fichiers fournisseurs.',
+    fn: (fichiers) => [{
+      files: fichiers.length,
+      rows_read: fichiers.reduce((s, f) => s + f.rows_read, 0),
+      rows_kept: fichiers.reduce((s, f) => s + f.rows_kept, 0),
+      rows_rejected: fichiers.reduce((s, f) => s + f.rows_rejected, 0),
+    }],
+  });
+
+  // ------------------------------------------------------------ outils de tracé
+  function guard(box, ...ids) {
+    const bad = ids.map((id) => dash.data(id).status).find((s) => s !== 'ok');
+    if (!bad) { box.querySelector(':scope > .cs-fail')?.remove(); return true; }
+    if (bad !== 'loading') {
+      box.querySelector(':scope > svg')?.remove();
+      box.classList.remove('dash-skeleton');
+      if (!box.querySelector(':scope > .cs-fail')) {
+        const f = document.createElement('div'); f.className = 'cs-fail'; f.textContent = 'Failed to load'; box.appendChild(f);
+      }
+    }
+    return false;
+  }
+  function mkSvg(box, W, H) {
+    box.querySelector(':scope > svg')?.remove();
+    box.classList.remove('dash-skeleton');
+    return d3.select(box).insert('svg', ':first-child').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).attr('role', 'img');
+  }
+  const textW = (svg, text, cls) => { const t = svg.append('text').attr('class', cls).text(text); const w = t.node().getComputedTextLength(); t.remove(); return w; };
+  function tipOf(box) {
+    let t = box.querySelector(':scope > .cs-tip');
+    if (!t) { t = document.createElement('div'); t.className = 'cs-tip'; t.hidden = true; box.appendChild(t); }
+    return t;
+  }
+  function hover(box, sel, linesOf, onOn) {
+    const tip = tipOf(box);
+    sel.on('pointerenter pointermove', function (event, d) {
+      const lines = linesOf(d);
+      tip.replaceChildren();
+      lines.forEach((l, i) => { const e = document.createElement(i === 0 ? 'b' : 'div'); e.textContent = l; tip.appendChild(e); });
+      tip.hidden = false;
+      const b = box.getBoundingClientRect();
+      const x = Math.max(0, Math.min(event.clientX - b.left + 12, b.width - tip.offsetWidth));
+      const y = Math.max(0, Math.min(event.clientY - b.top + 14, b.height - tip.offsetHeight));
+      tip.style.left = x + 'px'; tip.style.top = y + 'px';
+      if (onOn) onOn(d, true);
+    }).on('pointerleave', function (event, d) { tip.hidden = true; if (onOn) onOn(d, false); });
+  }
+  function hbars(box, rows, o = {}) {
+    const W = box.clientWidth; if (!W) return;
+    const rowH = o.rowH || 28, barH = o.barH || 14, gap = o.groupEvery ? 10 : 0;
+    const H = rows.length * rowH + (o.groupEvery ? Math.floor((rows.length - 1) / o.groupEvery) * gap : 0) + 4;
+    const svg = mkSvg(box, W, H);
+    const lw = Math.ceil(d3.max(rows, (r) => textW(svg, r.label, '')) || 0) + 10;
+    const ew = o.extra ? Math.ceil(d3.max(rows, (r) => (r.extra ? textW(svg, r.extra, 'cs-mut') : 0))) + 6 : 0;
+    const vw = Math.ceil(d3.max(rows, (r) => textW(svg, r.text, 'cs-val'))) + 8;
+    const x = d3.scaleLinear([0, d3.max(rows, (r) => r.value)], [lw, Math.max(lw + 40, W - ew - vw - 4)]);
+    const yOf = (i) => i * rowH + (o.groupEvery ? Math.floor(i / o.groupEvery) * gap : 0);
+    const g = svg.selectAll('g.r').data(rows).join('g').attr('class', 'r').attr('transform', (r, i) => `translate(0,${yOf(i)})`);
+    g.append('text').attr('x', lw - 8).attr('y', rowH / 2).attr('dy', '.35em').attr('text-anchor', 'end').text((r) => r.label);
+    g.append('rect').attr('class', 'cs-bar').attr('x', lw).attr('y', (rowH - barH) / 2).attr('height', barH).attr('rx', 4)
+      .attr('width', (r) => Math.max(2, x(r.value) - lw)).style('fill', (r) => r.color || dash.colors[0]);
+    g.append('text').attr('class', 'cs-val').attr('x', (r) => x(r.value) + 6).attr('y', rowH / 2).attr('dy', '.35em').text((r) => r.text);
+    if (o.extra) g.append('text').attr('class', 'cs-mut cs-val').attr('x', W).attr('y', rowH / 2).attr('dy', '.35em').attr('text-anchor', 'end').text((r) => r.extra || '');
+    const hit = g.append('rect').attr('class', 'cs-hit').attr('x', 0).attr('y', 0).attr('width', W).attr('height', rowH);
+    hover(box, hit, (r) => r.tip, (r, on) => {
+      box.classList.toggle('cs-hov', on);
+      g.select('.cs-bar').classed('on', (q) => on && q === r);
+    });
+  }
+
+  // ------------------------------------------------------------------- graphiques
+  function drawProviders() {
+    const box = $('#chart-fournisseurs');
+    if (!guard(box, 'providers')) return;
+    const rows = dash.data('providers').data.slice().sort((a, b) => b.n - a.n).map((p) => ({
+      label: p.provider, value: p.n, text: `${nf0.format(p.n)} · ${nf1.format(p.share * 100)} %`,
+      tip: [p.provider, `${nf0.format(p.n)} cartes (${nf1.format(p.share * 100)} % du catalogue)`, `Prix moyen ${eur(p.avg_price)}`, `Data moyenne ${nf1.format(p.avg_gb)} Go`],
+    }));
+    hbars(box, rows, { rowH: 26 });
+  }
+
+  function drawHist() {
+    const box = $('#chart-prix');
+    if (!guard(box, 'price_hist', 'kpis')) return;
+    const bins = dash.data('price_hist').data, k = dash.data('kpis').data[0];
+    const W = box.clientWidth; if (!W) return;
+    const H = 230, m = { t: 24, r: 8, b: 28, l: 38 };
+    const svg = mkSvg(box, W, H);
+    const xMax = bins[bins.length - 1].to;
+    const x = d3.scaleLinear([0, xMax], [m.l, W - m.r]);
+    const y = d3.scaleLinear([0, d3.max(bins, (b) => b.n)], [H - m.b, m.t]).nice(4);
+    svg.append('g').selectAll('line').data(y.ticks(4)).join('line')
+      .attr('x1', m.l).attr('x2', W - m.r).attr('y1', (t) => y(t)).attr('y2', (t) => y(t)).style('stroke', 'var(--cds-chart-grid)');
+    svg.append('g').selectAll('text').data(y.ticks(4)).join('text').attr('class', 'cs-tick')
+      .attr('x', m.l - 6).attr('y', (t) => y(t)).attr('dy', '.35em').attr('text-anchor', 'end').text((t) => nf0.format(t));
+    svg.append('g').selectAll('text').data(x.ticks(W < 420 ? 4 : 8)).join('text').attr('class', 'cs-tick')
+      .attr('x', (t) => x(t)).attr('y', H - m.b + 16).attr('text-anchor', 'middle').text((t) => `${t} €`);
+    const bars = svg.append('g').selectAll('rect').data(bins).join('rect').attr('class', 'cs-bar')
+      .attr('x', (b) => x(b.from) + 1).attr('width', (b) => Math.max(1, x(b.to) - x(b.from) - 2))
+      .attr('y', (b) => y(b.n)).attr('height', (b) => y(0) - y(b.n)).attr('rx', 2)
+      .style('fill', (b) => (b.from >= 100 ? 'var(--cds-chart-status-critical)' : dash.colors[0]));
+    // moyenne
+    const mx = x(k.avg_price);
+    svg.append('line').attr('x1', mx).attr('x2', mx).attr('y1', m.t - 6).attr('y2', H - m.b)
+      .style('stroke', 'var(--cds-chart-reference)').attr('stroke-dasharray', '4 3');
+    const ml = `moyenne ${eur(k.avg_price)}`, mw = textW(svg, ml, 'cs-mut');
+    svg.append('text').attr('class', 'cs-mut').attr('x', mx + 5).attr('y', m.t - 10).text(ml);
+    // seuil 100 €
+    const tx = x(100);
+    svg.append('line').attr('x1', tx).attr('x2', tx).attr('y1', m.t + 10).attr('y2', H - m.b).style('stroke', 'var(--cds-chart-status-critical)').attr('stroke-opacity', .5);
+    const tl = `${nf0.format(k.over100)} cartes > 100 €`, tw = textW(svg, tl, 'cs-mut');
+    const anchorEnd = tx + 5 + tw > W - m.r;
+    svg.append('text').attr('class', 'cs-mut').attr('x', anchorEnd ? tx - 5 : tx + 5).attr('text-anchor', anchorEnd ? 'end' : 'start').attr('y', m.t + 20).text(tl);
+    const hit = svg.append('g').selectAll('rect').data(bins).join('rect').attr('class', 'cs-hit')
+      .attr('x', (b) => x(b.from)).attr('width', (b) => x(b.to) - x(b.from)).attr('y', m.t).attr('height', H - m.b - m.t);
+    hover(box, hit, (b) => [`${b.from} à ${b.to} €`, `${nf0.format(b.n)} cartes`, `${nf1.format(b.share * 100)} % du catalogue`],
+      (b, on) => { box.classList.toggle('cs-hov', on); bars.classed('on', (q) => on && q === b); });
+  }
+
+  function drawByData() {
+    const box = $('#chart-volume');
+    if (!guard(box, 'by_data')) return;
+    const rows = dash.data('by_data').data.map((t) => ({
+      label: t.label, value: t.avg_price, text: eur(t.avg_price),
+      extra: t.eur_per_gb === null ? '' : `${nf2.format(t.eur_per_gb)} €/Go`,
+      color: t.gb === null ? dash.colors[1] : dash.colors[0],
+      tip: [t.label, `${nf0.format(t.n)} cartes`, `Prix moyen ${eur(t.avg_price)}`, t.eur_per_gb === null ? 'Pas de prix au Go' : `${eur(t.eur_per_gb)} par Go`],
+    }));
+    hbars(box, rows, { rowH: 28, extra: true });
+  }
+
+  function drawByDays() {
+    const box = $('#chart-duree');
+    if (!guard(box, 'by_days')) return;
+    const rows = dash.data('by_days').data.map((t) => ({
+      label: t.label, value: t.avg_price, text: eur(t.avg_price),
+      tip: [t.label, `${nf0.format(t.n)} cartes`, `Prix moyen ${eur(t.avg_price)}`],
+    }));
+    hbars(box, rows, { rowH: 28 });
+  }
+
+  function drawUnl() {
+    const box = $('#chart-illimite');
+    if (!guard(box, 'unl_vs_50')) return;
+    const rows = [];
+    for (const r of dash.data('unl_vs_50').data) {
+      rows.push({ label: `${r.days} jours · 50 Go`, value: r.gb50, text: eur(r.gb50), extra: '', color: dash.colors[0], tip: [`${r.days} jours · 50 Go`, `Prix moyen ${eur(r.gb50)}`] });
+      rows.push({
+        label: `${r.days} jours · illimité`, value: r.unlimited, text: eur(r.unlimited), extra: `${nfS.format(Math.round(r.diff))} %`, color: dash.colors[1],
+        tip: [`${r.days} jours · illimité`, `Prix moyen ${eur(r.unlimited)}`, `${nfS.format(Math.round(r.diff))} % par rapport à 50 Go`],
+      });
+    }
+    hbars(box, rows, { rowH: 26, extra: true, groupEvery: 2 });
+  }
+
+  // ---------------------------------------------------------------------- tableaux
+  const cell = (tr, text, cls) => { const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; tr.appendChild(td); return td; };
+  let sortKey = 'n', sortDir = 'desc';
+  function drawProvTable() {
+    const table = $('#table-fournisseurs'), d = dash.data('providers');
+    if (d.status !== 'ok') return;
+    const rows = d.data.slice().sort((a, b) => {
+      const A = a[sortKey], B = b[sortKey];
+      const c = typeof A === 'string' ? A.localeCompare(B, 'fr') : (A ?? -Infinity) - (B ?? -Infinity);
+      return sortDir === 'asc' ? c : -c;
+    });
+    const maxAvg = d3.max(d.data, (r) => r.avg_price);
+    const tbody = table.tBodies[0]; tbody.replaceChildren();
+    for (const r of rows) {
+      const tr = document.createElement('tr'); tr.dataset.key = r.provider;
+      cell(tr, r.provider);
+      cell(tr, nf0.format(r.n));
+      const td = cell(tr, '');
+      const wrap = document.createElement('span'); wrap.className = 'cs-cell';
+      const bar = document.createElement('i'); bar.style.width = `${Math.round((r.avg_price / maxAvg) * 56)}px`;
+      const num = document.createElement('span'); num.textContent = nf2.format(r.avg_price);
+      wrap.append(bar, num); td.replaceChildren(wrap);
+      cell(tr, nf2.format(r.avg_gb));
+      cell(tr, nf2.format(r.eur_per_gb));
+      cell(tr, `${nf1.format(r.unl_share * 100)} %`);
+      cell(tr, r.price_index === null ? '—' : nf1.format(r.price_index));
+      tbody.appendChild(tr);
+    }
+    table.querySelectorAll('thead th').forEach((th) => {
+      const f = th.dataset.field;
+      if (f === sortKey) th.setAttribute('aria-sort', sortDir === 'asc' ? 'ascending' : 'descending'); else th.removeAttribute('aria-sort');
+    });
+  }
+  function fillTable(id, source, cols, textCols = []) {
+    const table = $(id), d = dash.data(source);
+    if (d.status !== 'ok') return;
+    const tbody = table.tBodies[0]; tbody.replaceChildren();
+    for (const r of d.data) {
+      const tr = document.createElement('tr'); tr.dataset.key = r[table.dataset.rowKey];
+      cols.forEach((c, i) => cell(tr, c(r), textCols.includes(i) ? 't' : ''));
+      tbody.appendChild(tr);
+    }
+  }
+
+  // --------------------------------------------------------------- textes marqués
+  function fillText() {
+    document.querySelectorAll('[data-fmt]').forEach((el) => {
+      const d = dash.data(el.dataset.source);
+      if (d.status !== 'ok') return;
+      let row;
+      if (el.dataset.where) {
+        const [k, v] = el.dataset.where.split('=');
+        row = d.data.find((r) => String(r[k]) === v);
+      } else row = d.data[Number(el.dataset.row || 0)];
+      if (!row || row[el.dataset.field] == null) return;
+      el.textContent = F[el.dataset.fmt](row[el.dataset.field]);
+      el.classList.remove('dash-skeleton');
+    });
+    document.querySelectorAll('[data-cond]').forEach((el) => {
+      const d = dash.data('kpis');
+      if (d.status === 'ok') el.hidden = !d.data[0][el.dataset.cond];
+    });
+  }
+
+  document.querySelectorAll('#table-fournisseurs .cs-sort').forEach((b) => b.addEventListener('click', () => {
+    const k = b.dataset.sort;
+    if (k === sortKey) sortDir = sortDir === 'asc' ? 'desc' : 'asc'; else { sortKey = k; sortDir = k === 'provider' ? 'asc' : 'desc'; }
+    drawProvTable();
+  }));
+
+  dash.onData(() => {
+    fillText();
+    drawProviders(); drawHist(); drawByData(); drawByDays(); drawUnl();
+    drawProvTable();
+    fillTable('#table-best', 'best_value', [(r) => r.provider, (r) => r.product, (r) => nf2.format(r.price), (r) => nf2.format(r.eur_per_gb)], [0, 1]);
+    fillTable('#table-worst', 'worst_value', [(r) => r.provider, (r) => r.product, (r) => nf2.format(r.price), (r) => nf2.format(r.eur_per_gb)], [0, 1]);
+    fillTable('#table-fichiers', 'fichiers', [(r) => r.file, (r) => r.provider, (r) => nf0.format(r.rows_read), (r) => nf0.format(r.rows_kept), (r) => nf0.format(r.rows_rejected)], [0, 1]);
+  });
+})();
+</script>
